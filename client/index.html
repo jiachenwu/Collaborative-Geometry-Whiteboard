@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Web Geometry</title>
+  <link href="./client/style.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/split-grid/dist/split-grid.js"></script>
+  <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
+</head>
+<body>
+
+<div id="mainGrid" style="z-index:1;">
+  <div id="menuBar" class="menu">
+    <div id="newButton" type="button" class="btn btn-dark">New</div>
+    <div id="saveButton" type="button" class="btn btn-dark">Save</div>
+    <div id="openButton" type="button" class="btn btn-dark">Open</div>
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    <div id="outsideRoomMenu">
+      <button id="findRoomButton" type="button" class="btn btn-dark">Find room</button>
+      <button id="makeRoomButton" type="button" class="btn btn-dark">Make room</button>
+    </div>
+    <div id="insideRoomMenu" hidden>
+      <button id="leaveRoomButton" type="button" class="btn btn-dark">Leave room</button>
+    </div>
+  </div>
+  <div id="accountMenuBar" class="menu">
+    <div id="beforeLoginMenu" class="menu">
+      <button type="button" class="btn btn-dark" data-toggle="modal" data-target="#signupModal">Sign up</button>
+      <button type="button" class="btn btn-dark" data-toggle="modal" data-target="#loginModal">Log in</button>
+    </div>
+    <div id="afterLoginMenu" class="menu" hidden>
+      <span style="color:white;"><b>Hi <span class="usernameText">Username</span>!</b>&nbsp;&nbsp;</span>
+      <button id="logoutButton" class="btn btn-dark">Log out</button>
+    </div>
+  </div>
+  <div id="tools">
+    <hr>
+    <button id="moveToolButton" type="button"><i class="material-icons">open_with</i></button>
+    <button id="pointToolButton" type="button"><i class="material-icons">fiber_manual_record</i></button>
+    <button id="lineToolButton" type="button"><i class="material-icons">linear_scale</i></button>
+    <button id="circleToolButton" type="button"><i class="material-icons">adjust</i></button>
+    <button id="constructToolButton" type="button" hidden>Construction</button>
+    <button id="removeToolButton" type="button"><i class="material-icons">delete</i></button>
+  </div>
+  <div id="stage">
+    <!-- Canvas is placed over this -->
+  </div>
+  <!--<div class="horizontalSplit"></div>-->
+  <div id="bottomBar"></div>
+  <div class="verticalSplit"></div>
+  <div id="rightBar">
+    <div id="chat">
+      <div style="text-align:center;"><b>-Chat-</b></div>
+    </div>
+    <input type="text" id="chatInput" class="form-control">
+  </div>
+</div>
+
+<!-- Signup form -->
+<div class="modal fade" id="signupModal" tabindex="-1" role="dialog" aria-labelledby="signupModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="signupModalLabel">Sign up</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <span style="color: red;">* Warning: Password is not encrypted!</span><br />
+        <table>
+        <tr><td>Username: </td><td><input id="signupUsername" type="text"></input></td></tr>
+        <tr><td>Password: </td><td><input id="signupPassword" type="password"></input></td></tr>
+        <tr><td>Confirm password: </td><td><input id="signupConfirmPassword" type="password"></input></td></tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="signupSubmit" type="button" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Signup success -->
+<div class="modal fade" id="signupSuccessModal" tabindex="-1" role="dialog" aria-labelledby="signupSuccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="signupSuccessModalLabel">Sign up successful!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Logging in...
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Login form -->
+<div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginModalLabel">Log in</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <span style="color: red;">* Warning: Password is not encrypted!</span><br />
+        <table>
+        <tr><td>Username: </td><td><input id="loginUsername" type="text"></input></td></tr>
+        <tr><td>Password: </td><td><input id="loginPassword" type="password"></input></td></tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="loginSubmit" type="button" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save dialog -->
+<div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveModalLabel">Save</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="saveConstructionName">Construction Name</label>
+          <input id="saveConstructionName" type="text" class="form-control"></input>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="saveConstructionPrivate">
+          <label for="saveConstructionPrivate" class="form-check-label">Private</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="saveSubmit" type="button" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save success -->
+<div class="modal fade" id="saveSuccessModal" tabindex="-1" role="dialog" aria-labelledby="saveSuccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveSuccessModalLabel">Construction saved!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Construction was successfully saved!
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Open dialog -->
+<div class="modal fade" id="openModal" tabindex="-1" role="dialog" aria-labelledby="openModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="openModalLabel">Open</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="openDialogContent">
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Find room dialog -->
+<div class="modal fade" id="findRoomModal" tabindex="-1" role="dialog" aria-labelledby="findRoomModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="findRoomModalLabel">Available rooms</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="findRoomDialogContent">
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Make room dialog -->
+<div class="modal fade" id="makeRoomModal" tabindex="-1" role="dialog" aria-labelledby="makeRoomModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="makeRoomModalLabel">Make room</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="makeRoomDialogContent">
+        Room name: <input id="makeRoomName" type="text"></input><br />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="makeRoomSubmit" type="button" class="btn btn-primary">Start room</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Canvas -->
+<canvas id="canvas" style="z-index:0; position:absolute; left:0px; top:0px;" width="10px" height="10px"></canvas>
+
+</body>
+</html>
+
+
+<script type="module">
+import {Editor} from './client/editor.js'
+import {ActionManager} from './client/action/actionmanager.js'
+
+var dom = {
+  hide(e) { e.setAttribute('hidden', true) },
+  show(e) { e.removeAttribute('hidden') }
+}
+
+let socket = io();
+
+let inRoom = false;
+
+// Handle sign up
+let signupUsername = document.getElementById('signupUsername');
+let signupPassword = document.getElementById('signupPassword');
+let signupConfirmPassword = document.getElementById('signupConfirmPassword');
+
+let cacheUsername = "";
+let cachePassword = "";
+signupSubmit.onclick = function() {
+    let username = signupUsername.value;
+    let pass = signupPassword.value;
+    let confirmPass = signupConfirmPassword.value;
+    if (username.length == 0 || pass.length == 0) {
+      alert("Username and password cannot be empty");
+    }
+    else if (pass !== confirmPass) {
+      alert("Password and confirmation do not match");
+    }
+    else {
+      cacheUsername = username;
+      cachePassword = pass;
+      //let encryptedPass = pass;  //TODO: We are not currently encrypting the password. This would require https, which I think we might need a proper server for.
+      socket.emit('signup', {
+          username: cacheUsername,  //TODO: Look into potential NoSQL injection security issues.
+          password: cachePassword
+      });
+    }
+}
+socket.on('signupResponse', function(data) {
+    if (data.success) {
+        $('#signupModal').modal('hide');
+        $('#signupSuccessModal').modal('show');
+        $('#signupSuccessModal').on('shown.bs.modal', function (e) {
+          socket.emit('login', {
+              username: cacheUsername,
+              password: cachePassword
+          });
+          cacheUsername = "";
+          cachePassword = "";
+        })
+    }
+    else {
+        cacheUsername = "";
+        cachePassword = "";
+        alert("Sign up unsuccessful. "+data.message);
+    }
+});
+
+// Handle log in and log out
+let loginUsername = document.getElementById('loginUsername');
+let loginPassword = document.getElementById('loginPassword');
+
+let signedInAs = "";
+
+loginSubmit.onclick = function() {
+    let pass = loginPassword.value;
+    socket.emit('login', {
+        username: loginUsername.value,
+        password: pass
+    });
+}
+socket.on('loginResponse', function(data) {
+    if (data.success) {
+      dom.hide(beforeLoginMenu);
+      dom.show(afterLoginMenu);
+      $('#signupSuccessModal').modal('hide');
+      $('#loginModal').modal('hide');
+      $('.usernameText').each(function(index) {
+        signedInAs = data.username;
+        $(this).text(signedInAs);
+      });
+    }
+    else {
+      alert("Log in unsuccessful. "+data.message);
+    }
+});
+
+logoutButton.onclick = function() {
+  dom.show(beforeLoginMenu);
+  dom.hide(afterLoginMenu);
+  signedInAs = "";
+  socket.emit('logout');
+}
+
+
+// Handle save
+let saveSubmit = document.getElementById('saveSubmit');
+
+saveButton.onclick = function() {
+  if (signedInAs === "") {
+    alert("Must be signed in to save.");
+  }
+  else {
+    $('#saveModal').modal('show');
+  }
+}
+
+saveSubmit.onclick = function() {
+  if (signedInAs === "") {
+    alert("Must be signed in to save.");
+  }
+  else if (saveConstructionName.value.length === 0) {
+    alert("Construction name cannot be empty.");
+  }
+  else {
+    socket.emit('saveConstruction', {
+      constructionName:saveConstructionName.value,
+      construction:editor.construction.serialized(),
+      constructionPrivate: saveConstructionPrivate.checked
+    });
+  }
+}
+
+socket.on('saveConstructionResponse', function(data) {
+    if (data.success) {
+      $('#saveModal').modal('hide');
+      $('#saveSuccessModal').modal('show');
+    }
+    else {
+      alert("Save construction unsuccessful. "+data.message);
+    }
+});
+
+
+// Handle open
+function loadConstructionFromId(_id) {
+  socket.emit('getConstructionFromId', _id);
+}
+
+socket.on('getConstructionFromIdResponse', function(res) {
+  if (res.success) {
+    let construction = res.data.construction;
+    //console.log(construction);
+    editor.loadConstruction({serial:construction});
+    $('#openModal').modal('hide');
+  }
+  else {
+    alert("Failed to open construction.");
+  }
+});
+
+openButton.onclick = function() {
+  if (inRoom) {
+    alert("Cannot open a construction while in a room.");
+  }
+  else {
+    socket.emit('getConstructionList');
+  }
+}
+
+socket.on('getConstructionListResponse', function(data) {
+  let s = "";
+  s += "<table><tr><td><b>Construction name&nbsp;&nbsp;&nbsp;&nbsp;</b></td><td><b>Creator</b></td></tr>";
+  data.reverse();
+  for (let row of data) {
+    s += "<tr><td><a href='#' class='loadConstruction_"+row._id+"'>"+row.constructionName+"</a></td><td>"+row.creator+"</td></tr>";
+  }
+  s += "</table>";
+  openDialogContent.innerHTML = s;
+  for (let row of data) {
+    $('.loadConstruction_'+row._id).click(function() {
+      loadConstructionFromId(row._id);
+    });
+  }
+  $('#openModal').modal('show');
+});
+
+// Handle new
+newButton.onclick = function() {
+  if (inRoom) {
+    alert("Cannot create new construction while in a room.");
+  }
+  else {
+    if (confirm('Are you sure you want to start a new drawing? Any unsaved work will be lost')) {
+      editor.loadEmptyConstruction();
+    }
+  }
+}
+
+document.getElementById("chatInput").addEventListener("keyup", function(e) {
+  if (e.key === "Enter") {
+    socket.emit("sendMessage", {
+      message: e.target.value
+    });
+    receiveMessage({ message: e.target.value, sender: 'You' })
+    e.target.value = "";
+    
+  }
+});
+
+let colors = [
+  '#ff6188',
+  '#fc9867',
+  '#ffd866',
+  '#a9dc76',
+  '#78dce8',
+  '#ab9df2'
+];
+
+function hash(string) {
+  let sum = 0;
+  for (let char of string.split('')) {
+    sum += char.charCodeAt(0);
+  }
+  return sum % colors.length;
+}
+
+function receiveMessage(data) {
+  var div = document.createElement('div');
+  div.classList.add('message');
+  
+  var name = document.createElement('div');
+  name.innerText = data.sender;
+  name.classList.add('username');
+  name.style.color = colors[hash(data.sender)];
+
+  var text = document.createElement('div');
+  text.innerText = data.message;
+  name.classList.add('text');
+
+  div.appendChild(name);
+  div.appendChild(text);
+  
+  var chat = document.getElementById('chat');
+  chat.appendChild(div);
+  chat.scrollTo(0, chat.scrollHeight);
+}
+
+socket.on('receiveMessage', receiveMessage);
+
+// Handle find room
+function loadRoom(id) {
+  socket.emit('loadRoom', id);
+}
+
+findRoomButton.onclick = function() {
+  if (signedInAs === "") {
+    alert("Must be signed in to join a room.");
+  }
+  else {
+    socket.emit('getRoomList');
+  }
+}
+
+socket.on('getRoomListResponse', function(data) {
+  if (data.success) {
+    let rooms = data.rooms;
+    let s = "";
+    s += "<table><tr><td><b>Room name&nbsp;&nbsp;&nbsp;&nbsp;</b></td><td><b>Creator</b></td></tr>";
+    rooms.reverse();
+      for (let row of rooms) {
+      s += "<tr><td><a href='#' class='loadRoom_"+row.id+"'>"+row.roomName+"</a></td><td>"+row.creator+"</td></tr>";
+    }
+    s += "</table>";
+    findRoomDialogContent.innerHTML = s;
+    for (let row of rooms) {
+      $('.loadRoom_'+row.id).click(function() {
+        loadRoom(row.id);
+      });
+    }
+    $('#findRoomModal').modal('show');
+  }
+  else {
+    alert("Could not get list of rooms. "+data.message);
+  }
+});
+
+
+// Handle make room
+makeRoomButton.onclick = function() {
+  if (signedInAs === "") {
+    alert("Must be signed in to make a room.");
+  }
+  else {
+    $('#makeRoomModal').modal('show');
+  }
+}
+
+socket.on('makeRoomResponse', function(data) {
+    if (data.success) {
+      inRoom = true;
+      dom.hide(outsideRoomMenu);
+      dom.show(insideRoomMenu);
+      $('#makeRoomModal').modal('hide');
+    }
+    else {
+      alert("Could not make room. "+data.message);
+    }
+});
+
+
+// Handle leave room
+leaveRoomButton.onclick = function() {
+  socket.emit('leaveRoom');
+}
+
+socket.on('leaveRoomResponse', function(data) {
+  dom.hide(insideRoomMenu);
+  dom.show(outsideRoomMenu);
+  usersInRoom = [];
+  inRoom = false;
+  if (data && data.message) alert(data.message);
+});
+
+
+
+// Set up editor
+let stage = document.getElementById('stage');
+let canvas = document.getElementById("canvas");
+
+let toolButtons = {
+  move: document.getElementById('moveToolButton'),
+  remove: document.getElementById('removeToolButton'),
+  point: document.getElementById('pointToolButton'),
+  line: document.getElementById('lineToolButton'),
+  circle: document.getElementById('circleToolButton'),
+  construct: document.getElementById('constructToolButton')
+};
+
+let editor = Editor({
+  toolButtons: toolButtons,
+  stage: stage,
+  canvas: canvas,
+});
+
+// Submit make room
+makeRoomSubmit.onclick = function() {
+  if (signedInAs === "") {
+    alert("Must be signed in to make a room.");
+  }
+  else {
+    let roomName = makeRoomName.value;
+    if (roomName.length === 0) {
+      alert("Room name cannot be empty.");
+    }
+    else {
+      socket.emit('makeRoom', {roomName:roomName, constructionSerial:editor.construction.serialized()});
+    }
+  }
+}
+
+// Track other users' data
+let usersInRoom = [];
+
+socket.on('updateUsersData', function(data) {
+  usersInRoom = data.userData;
+  let actions = ActionManager.deserializeActions(data.actions, editor.construction, editor.actions);
+  editor.actions.officialActionsToAdd = editor.actions.officialActionsToAdd.concat(actions);
+});
+
+// Load room
+socket.on('loadRoomResponse', function(data) {
+  if (data.success) {
+    dom.show(insideRoomMenu);
+    dom.hide(outsideRoomMenu);
+    inRoom = true;
+    editor.loadConstruction({serial:data.constructionSerial});
+    $('#findRoomModal').modal('hide');
+  }
+  else {
+    alert("Could not open room. "+data.message);
+  }
+});
+
+// Update construction
+socket.on('resetConstruction', function(serial) {
+  editor.loadConstruction({serial:serial, preserveCamera:true});
+});
+
+// Update server data of user
+setInterval(function() {
+  let manager = editor.actions;
+  if (inRoom) {
+    let unsentActions = [];
+    let serialized = manager.serializedActions();  //TODO: No need to serialize all actions.
+    if (manager.actions.length > manager.sentUpTo+1) unsentActions = serialized.slice(manager.sentUpTo+1, serialized.length)
+    //console.log(unsentActions);
+    socket.emit('updateUserData', {
+      mouse: editor.worldMouse,
+      actions: unsentActions
+    });
+    manager.sentUpTo = manager.actions.length-1;
+    manager.addAllOfficial();
+  }
+  else {
+    manager.clear();  // If not in room, don't bother with storing actions.
+  }
+}, 1000/30);
+
+// Mouse events
+canvas.oncontextmenu = function(e) { e.preventDefault(); }  // Prevent right-click menu on canvas
+
+canvas.onmousedown = function(event) { editor.onmousedown(event); }
+document.onmouseup = function(event) { editor.onmouseup(event); }
+canvas.onmousemove = function(event) { editor.onmousemove(event); }
+canvas.onwheel = function(event) { editor.onwheel(event); }
+
+// Key events
+canvas.onkeydown = function(event) { editor.onkeydown(event); }
+canvas.onkeyup = function(event) { editor.onkeyup(event); }
+
+// Canvas resizing
+editor.onresize({adjustCamera:false});
+
+document.body.onresize = function(event) { 
+  event.adjustCamera = true;
+  editor.onresize(event); 
+}
+
+// Update and render
+let ctx = canvas.getContext("2d");
+setInterval(function() {
+  editor.render();
+  let pixelsToWorld = editor.camera.pixelsToWorldUnits(1);
+  ctx.fillStyle = '#000000';
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1.5*pixelsToWorld;
+  for (let user of usersInRoom) {
+    if (user.id === socket.id) continue;
+    let mouse = user.mouse;
+    ctx.beginPath();
+    ctx.moveTo(mouse.x, mouse.y);
+    ctx.lineTo(mouse.x+10*pixelsToWorld, mouse.y+5*pixelsToWorld);
+    ctx.lineTo(mouse.x+5*pixelsToWorld, mouse.y+10*pixelsToWorld);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+}, 1000/60);
+
+// Split
+Split({
+  columnGutters: [{
+    track: 2,
+    element: document.querySelector('.verticalSplit'),
+  }],
+  // rowGutters: [{
+  //   track: 2,
+  //   element: document.querySelector('.horizontalSplit'),
+  // }],
+  writeStyle: (grid, gridTemplateProp, gridTemplateStyle) => {
+    grid.style[gridTemplateProp] = gridTemplateStyle;
+  },
+  onDrag: (direction, track, gridTemplateStyle) => {
+    editor.onresize({adjustCamera:true});
+  }
+})
+
+</script>
